@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Convert your text to audio using the Web Speech API. Adjust voice, speed, and pitch easily.">
+    <meta name="keywords" content="text to speech, speech synthesis, Web Speech API, convert text to audio, online TTS, voice reader, halfmoon, javascript, javascript project">
+    <meta name="author" content="A027">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="TEXT to AUDIO (Web Speech API)">
+    <meta property="og:description" content="Convert your text to speech with adjustable voice, rate, and pitch. Try this fast and simple TTS tool!">
+    <meta property="og:image" content="https://github.com/avinash-027/text-to-audio/img/icons8-speech-96.png">
+    <meta property="og:url" content="https://github.com/avinash-027/text-to-audio">
+    <meta property="og:type" content="website">
+
+    <title>TEXT to AUDIO (Web Speech API)</title>
+    
+    <!-- links -->
+    <link rel="icon" type="image/png" sizes="96x96" href="img/icons8-speech-96.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.2/css/halfmoon.min.css" rel="stylesheet" crossorigin="anonymous" />
+    <link href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.2/css/cores/halfmoon.cores.css" rel="stylesheet" crossorigin="anonymous" />
+
+    <style>
+        .side {height: 440px;}
+        .icons {font-size: 27px;}
+        .icons-lg {font-size: 50px;}
+        option {font-size: 14.1px;}
+        .stop-audio {display: none;}
+        main #reading-text-container {
+            display: none;
+            width: 90%;
+            height: 5%;
+            z-index: 999;
+            font-family: Georgia, 'Times New Roman', Times, serif;
+        }
+        #waveform {
+            display: none;
+            height: 50px;
+            position: relative;
+        }
+        .wave-loader {
+            position: absolute;
+            left: 45%;
+            top: -20%;
+            display: flex;
+            gap: 5px;
+            height: 22px;
+        }
+        .wave-loader span {
+            display: block;
+            width: 12px;
+            height: 100%;
+            border-radius: 50%;
+            background-color: #28a745;
+            animation: wavePulse 1.2s infinite ease-in-out;
+        }
+        .wave-loader span:nth-child(1) {animation-delay: 0s;}
+        .wave-loader span:nth-child(2) {animation-delay: 0.2s;}
+        .wave-loader span:nth-child(3) {animation-delay: 0.4s;}
+        .wave-loader span:nth-child(4) {animation-delay: 0.2s;}
+        .wave-loader span:nth-child(5) {animation-delay: 0s;}
+        @keyframes wavePulse {
+            0%,
+            100% {
+                transform: scaleY(1); opacity: 0.5;
+            }
+            50% {
+                transform: scaleY(1.8); opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg p-3">
+            <div class="dropdown me-3" id="theme">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="themeDropdown"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="icons fa-solid fa-palette"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="themeDropdown">
+                    <li>
+                        <button class="dropdown-item" type="button" data-theme="default">
+                            Default
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item" type="button" data-theme="modern">
+                            Modern
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item" type="button" data-theme="elegant">
+                            Elegant
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="ms-auto d-flex align-items-center">
+                <a href="https://github.com/avinash-027/text-to-audio" target="_blank" class="me-3" aria-label="GitHub">
+                    <i class="icons fa-brands fa-github"></i>
+                </a>
+                <button class="btn btn-secondary" id="light-dark-mode" type="button">
+                    <i class="icons fa-solid fa-circle-half-stroke"></i>
+                </button>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="container">
+            <div class="row justify-content-center mt-5">
+                <div id="controls-form" class="side col-md-5 text-center">
+                    <i class="mt-1 icons-lg fa-solid fa-comments"></i>
+                    <h3 class="mt-4">Text to Audio <small>(Web Speech API)</small></h3>
+                    <form class="px-4">
+                        <div class="form-group mt-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <label for="rate" class="mb-0">Speed Rate</label>
+                                <div id="rate-value" class="badge badge-primary">1x</div>
+                            </div>
+                            <input type="range" name="rate" id="rate" class="custom-range mt-3 w-100" min="0.25" max="3.25"
+                                value="1" step="0.25" />
+                        </div>
+                        <div class="form-group mt-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <label for="pitch" class="mb-0">Pitch</label>
+                                <div id="pitch-value" class="badge badge-primary">1Hz</div>
+                            </div>
+                            <input type="range" name="pitch" id="pitch" class="custom-range mt-3 w-100" min="0.5"
+                                max="2" value="1" step="0.1" />
+                        </div>
+                        <div class="form-group mt-3">
+                            <label for="voice-select" class="mb-2">Select Voice</label>
+                            <select name="voice" id="voice-select" class="form-control form-control-lg"></select>
+                        </div>
+                        <div class="mt-3 d-grid">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fa-solid fa-play me-1"></i>AUDIO
+                            </button>
+                        </div>
+                        <div class="mt-3 d-grid">
+                            <button type="button" class="stop-audio btn btn-danger btn-lg">
+                                <i class="fa fa-stop me-2"></i>STOP
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="text-form" class="side col-md-6">
+                    <form>
+                        <div class="form-group">
+                            <textarea name="" id="text-input" class="form-control form-control-lg" rows="17"
+                                placeholder="Type Anything" style="overflow-y: auto; resize: none"></textarea>
+                        </div>
+                    </form>
+                    <div class="col-auto" id="waveform">
+                        <div class="wave-loader">
+                            <span></span><span></span><span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="reading-text-container" class="container mt-4 px-5 justify-content-center align-items-center">
+                <div class="card p-3">
+                    <div class="card-title fw-bold">READING PARA</div>
+                    <div id="reading-text" class="fst-italic card-text"></div>
+                </div>
+            </div>
+        </div>
+        <div id="alert-container" style="
+          position: fixed;
+          bottom: 10px;
+          right: 20px;
+          z-index: 1055;
+          max-width: 300px;
+        "></div>
+    </main>
+    <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+
+</html>
